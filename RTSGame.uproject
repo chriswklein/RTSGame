@@ -1,0 +1,13 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{ACC0204D-4971-4082-D618-1ABF10E2F932}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "RTSGame",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
