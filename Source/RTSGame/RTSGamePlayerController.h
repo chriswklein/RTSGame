@@ -1,4 +1,3 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 #pragma once
 #include "GameFramework/PlayerController.h"
 #include "RTSGamePlayerController.generated.h"
@@ -11,30 +10,43 @@ class ARTSGamePlayerController : public APlayerController
 public:
 	ARTSGamePlayerController();
 
-protected:
-	/** True if the controlled character should navigate to the mouse cursor. */
-	uint32 bMoveToMouseCursor : 1;
-
 	// Begin PlayerController interface
 	virtual void PlayerTick(float DeltaTime) override;
 	virtual void SetupInputComponent() override;
+    virtual void PostInitializeComponents() override;
 	// End PlayerController interface
 
-	/** Resets HMD orientation in VR. */
-	void OnResetVR();
+private:
+    void UpdateCamera(float DeltaTime);
 
-	/** Navigate player to the current mouse cursor location. */
-	void MoveToMouseCursor();
+    void PanCameraVertical(float Val);
+    void PanCameraHorizontal(float Val);
 
-	/** Navigate player to the current touch location. */
-	void MoveToTouchLocation(const ETouchIndex::Type FingerIndex, const FVector Location);
-	
-	/** Navigate player to the given world location. */
-	void SetNewMoveDestination(const FVector DestLocation);
+    void OnTouchBegin(const ETouchIndex::Type FingerIndex, const FVector Location);
+    void OnTouchEnd(const ETouchIndex::Type FingerIndex, const FVector Location);
+    void OnTouchMoved(const ETouchIndex::Type FingerIndex, const FVector Location);
 
-	/** Input handlers for SetDestination action. */
-	void OnSetDestinationPressed();
-	void OnSetDestinationReleased();
+    /** Camera acceleration */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true", ClampMin = "100", ClampMax = "5000"))
+	float CameraAccel;
+
+    /** Camera deceleration */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true", ClampMin = "100", ClampMax = "5000"))
+	float CameraDecel;
+
+    /** Maximum camera speed (per second) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true", ClampMin = "50", ClampMax = "500"))
+	float CameraSpeedMax;
+
+    /** Scale touch input camera panning */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true", ClampMin = "0.05", ClampMax = "1.0"))
+    float CameraTouchScale;
+
+	/** Main camera view */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	class ACameraActor* TopDownCamera;
+
+    FVector CameraVel;
+    FVector2D CameraInputVec;
+    FVector2D LastTouchDragLocation;
 };
-
-

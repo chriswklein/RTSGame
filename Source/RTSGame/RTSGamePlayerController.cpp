@@ -1,27 +1,22 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
-
 #include "RTSGame.h"
 #include "RTSGamePlayerController.h"
-#include "AI/Navigation/NavigationSystem.h"
 #include "Runtime/Engine/Classes/Components/DecalComponent.h"
-#include "Kismet/HeadMountedDisplayFunctionLibrary.h"
-#include "RTSGameCharacter.h"
 
 ARTSGamePlayerController::ARTSGamePlayerController()
 {
-	bShowMouseCursor = true;
-	DefaultMouseCursor = EMouseCursor::Crosshairs;
+    bShowMouseCursor = true;
+    DefaultMouseCursor = EMouseCursor::Crosshairs;
+    bAutoManageActiveCameraTarget = false;
+    CameraAccel = 1250.0f;
+    CameraDecel = 1000.0f;
+    CameraSpeedMax = 100.0f;
+    CameraTouchScale = 0.05f;
 }
 
 void ARTSGamePlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
-
-	// keep updating the destination every tick while desired
-	if (bMoveToMouseCursor)
-	{
-		MoveToMouseCursor();
-	}
+    UpdateCamera(DeltaTime);
 }
 
 void ARTSGamePlayerController::SetupInputComponent()
@@ -29,85 +24,90 @@ void ARTSGamePlayerController::SetupInputComponent()
 	// set up gameplay key bindings
 	Super::SetupInputComponent();
 
-	InputComponent->BindAction("SetDestination", IE_Pressed, this, &ARTSGamePlayerController::OnSetDestinationPressed);
-	InputComponent->BindAction("SetDestination", IE_Released, this, &ARTSGamePlayerController::OnSetDestinationReleased);
+    InputComponent->BindAxis("PanCameraVertical", this, &ARTSGamePlayerController::PanCameraVertical);
+    InputComponent->BindAxis("PanCameraHorizontal", this, &ARTSGamePlayerController::PanCameraHorizontal);
 
-	// support touch devices 
-	InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &ARTSGamePlayerController::MoveToTouchLocation);
-	InputComponent->BindTouch(EInputEvent::IE_Repeat, this, &ARTSGamePlayerController::MoveToTouchLocation);
-
-	InputComponent->BindAction("ResetVR", IE_Pressed, this, &ARTSGamePlayerController::OnResetVR);
+	// Mobile input
+    InputComponent->BindTouch(IE_Pressed, this, &ARTSGamePlayerController::OnTouchBegin);
+    InputComponent->BindTouch(IE_Released, this, &ARTSGamePlayerController::OnTouchEnd);
+    InputComponent->BindTouch(IE_Repeat, this, &ARTSGamePlayerController::OnTouchMoved);
 }
 
-void ARTSGamePlayerController::OnResetVR()
+void ARTSGamePlayerController::PostInitializeComponents()
 {
-	UHeadMountedDisplayFunctionLibrary::ResetOrientationAndPosition();
+    Super::PostInitializeComponents();
+
+    if(GetWorld() && GetWorld()->IsGameWorld())
+    {
+        // Create and assign camera (if not set from level)
+        if(TopDownCamera == nullptr)
+        {
+            FActorSpawnParameters SpawnInfo;
+            SpawnInfo.Owner = this;
+            SpawnInfo.Instigator = Instigator;
+            SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+            SpawnInfo.ObjectFlags |= RF_Transient;
+            TopDownCamera = GetWorld()->SpawnActor<ACameraActor>(FVector(0.0f, 0.0f, 2500.0f), FRotator(-75.0f, 0.0f, 0.0f), SpawnInfo);
+        }
+        SetViewTarget(TopDownCamera);
+    }
 }
 
-void ARTSGamePlayerController::MoveToMouseCursor()
+void ARTSGamePlayerController::UpdateCamera(float DeltaTime)
 {
-	if (UHeadMountedDisplayFunctionLibrary::IsHeadMountedDisplayEnabled())
-	{
-		if (ARTSGameCharacter* MyPawn = Cast<ARTSGameCharacter>(GetPawn()))
-		{
-			if (MyPawn->GetCursorToWorld())
-			{
-				UNavigationSystem::SimpleMoveToLocation(this, MyPawn->GetCursorToWorld()->GetComponentLocation());
-			}
-		}
-	}
-	else
-	{
-		// Trace to see what is under the mouse cursor
-		FHitResult Hit;
-		GetHitResultUnderCursor(ECC_Visibility, false, Hit);
+    if(TopDownCamera)
+    {
+        CameraVel.X += CameraInputVec.X * CameraAccel * DeltaTime;
+        CameraVel.Y += CameraInputVec.Y * CameraAccel * DeltaTime;
 
-		if (Hit.bBlockingHit)
-		{
-			// We hit something, move there
-			SetNewMoveDestination(Hit.ImpactPoint);
-		}
-	}
+        CameraVel = CameraVel.GetClampedToMaxSize(CameraSpeedMax);
+        TopDownCamera->AddActorWorldOffset(CameraVel, false);
+
+        if(CameraVel.SizeSquared() > 0.0f)
+        {
+            const float VelSize = FMath::Max(CameraVel.Size() - (CameraDecel * DeltaTime), 0.f);
+            CameraVel = CameraVel.GetSafeNormal() * VelSize;
+        }
+    }
+
+    CameraInputVec = FVector2D::ZeroVector;
 }
 
-void ARTSGamePlayerController::MoveToTouchLocation(const ETouchIndex::Type FingerIndex, const FVector Location)
+void ARTSGamePlayerController::PanCameraVertical(float Val)
 {
-	FVector2D ScreenSpaceLocation(Location);
-
-	// Trace to see what is under the touch location
-	FHitResult HitResult;
-	GetHitResultAtScreenPosition(ScreenSpaceLocation, CurrentClickTraceChannel, true, HitResult);
-	if (HitResult.bBlockingHit)
-	{
-		// We hit something, move there
-		SetNewMoveDestination(HitResult.ImpactPoint);
-	}
+    CameraInputVec.X += Val;
 }
 
-void ARTSGamePlayerController::SetNewMoveDestination(const FVector DestLocation)
+void ARTSGamePlayerController::PanCameraHorizontal(float Val)
 {
-	APawn* const MyPawn = GetPawn();
-	if (MyPawn)
-	{
-		UNavigationSystem* const NavSys = GetWorld()->GetNavigationSystem();
-		float const Distance = FVector::Dist(DestLocation, MyPawn->GetActorLocation());
-
-		// We need to issue move command only if far enough in order for walk animation to play correctly
-		if (NavSys && (Distance > 120.0f))
-		{
-			NavSys->SimpleMoveToLocation(this, DestLocation);
-		}
-	}
+    CameraInputVec.Y += Val;
 }
 
-void ARTSGamePlayerController::OnSetDestinationPressed()
+void ARTSGamePlayerController::OnTouchBegin(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
-	// set flag to keep updating destination until released
-	bMoveToMouseCursor = true;
+    if(FingerIndex == ETouchIndex::Touch1)
+    {
+        LastTouchDragLocation = FVector2D(Location);
+    }
 }
 
-void ARTSGamePlayerController::OnSetDestinationReleased()
+void ARTSGamePlayerController::OnTouchEnd(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
-	// clear flag to indicate we should stop updating the destination
-	bMoveToMouseCursor = false;
+    if(FingerIndex == ETouchIndex::Touch1)
+    {
+        LastTouchDragLocation = FVector2D::ZeroVector;
+    }
+}
+
+void ARTSGamePlayerController::OnTouchMoved(const ETouchIndex::Type FingerIndex, const FVector Location)
+{
+    if(FingerIndex == ETouchIndex::Touch1 && !LastTouchDragLocation.IsZero())
+    {
+        FVector2D const DragDelta = (FVector2D(Location) - LastTouchDragLocation) * CameraTouchScale;
+
+        PanCameraHorizontal(-DragDelta.X);
+        PanCameraVertical(DragDelta.Y);
+
+        LastTouchDragLocation = FVector2D(Location);
+    }
 }
