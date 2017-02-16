@@ -1,8 +1,7 @@
 #include "RTSGame.h"
-#include "RTSGamePlayerController.h"
-#include "Runtime/Engine/Classes/Components/DecalComponent.h"
+#include "RTSPlayerController.h"
 
-ARTSGamePlayerController::ARTSGamePlayerController()
+ARTSPlayerController::ARTSPlayerController()
 {
     bShowMouseCursor = true;
     DefaultMouseCursor = EMouseCursor::Crosshairs;
@@ -13,27 +12,27 @@ ARTSGamePlayerController::ARTSGamePlayerController()
     CameraTouchScale = 0.05f;
 }
 
-void ARTSGamePlayerController::PlayerTick(float DeltaTime)
+void ARTSPlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
     UpdateCamera(DeltaTime);
 }
 
-void ARTSGamePlayerController::SetupInputComponent()
+void ARTSPlayerController::SetupInputComponent()
 {
 	// set up gameplay key bindings
 	Super::SetupInputComponent();
 
-    InputComponent->BindAxis("PanCameraVertical", this, &ARTSGamePlayerController::PanCameraVertical);
-    InputComponent->BindAxis("PanCameraHorizontal", this, &ARTSGamePlayerController::PanCameraHorizontal);
+    InputComponent->BindAxis("PanCameraVertical", this, &ARTSPlayerController::PanCameraVertical);
+    InputComponent->BindAxis("PanCameraHorizontal", this, &ARTSPlayerController::PanCameraHorizontal);
 
 	// Mobile input
-    InputComponent->BindTouch(IE_Pressed, this, &ARTSGamePlayerController::OnTouchBegin);
-    InputComponent->BindTouch(IE_Released, this, &ARTSGamePlayerController::OnTouchEnd);
-    InputComponent->BindTouch(IE_Repeat, this, &ARTSGamePlayerController::OnTouchMoved);
+    InputComponent->BindTouch(IE_Pressed, this, &ARTSPlayerController::OnTouchBegin);
+    InputComponent->BindTouch(IE_Released, this, &ARTSPlayerController::OnTouchEnd);
+    InputComponent->BindTouch(IE_Repeat, this, &ARTSPlayerController::OnTouchMoved);
 }
 
-void ARTSGamePlayerController::PostInitializeComponents()
+void ARTSPlayerController::PostInitializeComponents()
 {
     Super::PostInitializeComponents();
 
@@ -53,7 +52,7 @@ void ARTSGamePlayerController::PostInitializeComponents()
     }
 }
 
-void ARTSGamePlayerController::UpdateCamera(float DeltaTime)
+void ARTSPlayerController::UpdateCamera(float DeltaTime)
 {
     if(TopDownCamera)
     {
@@ -73,17 +72,17 @@ void ARTSGamePlayerController::UpdateCamera(float DeltaTime)
     CameraInputVec = FVector2D::ZeroVector;
 }
 
-void ARTSGamePlayerController::PanCameraVertical(float Val)
+void ARTSPlayerController::PanCameraVertical(float Val)
 {
     CameraInputVec.X += Val;
 }
 
-void ARTSGamePlayerController::PanCameraHorizontal(float Val)
+void ARTSPlayerController::PanCameraHorizontal(float Val)
 {
     CameraInputVec.Y += Val;
 }
 
-void ARTSGamePlayerController::OnTouchBegin(const ETouchIndex::Type FingerIndex, const FVector Location)
+void ARTSPlayerController::OnTouchBegin(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
     if(FingerIndex == ETouchIndex::Touch1)
     {
@@ -91,7 +90,7 @@ void ARTSGamePlayerController::OnTouchBegin(const ETouchIndex::Type FingerIndex,
     }
 }
 
-void ARTSGamePlayerController::OnTouchEnd(const ETouchIndex::Type FingerIndex, const FVector Location)
+void ARTSPlayerController::OnTouchEnd(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
     if(FingerIndex == ETouchIndex::Touch1)
     {
@@ -99,7 +98,7 @@ void ARTSGamePlayerController::OnTouchEnd(const ETouchIndex::Type FingerIndex, c
     }
 }
 
-void ARTSGamePlayerController::OnTouchMoved(const ETouchIndex::Type FingerIndex, const FVector Location)
+void ARTSPlayerController::OnTouchMoved(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
     if(FingerIndex == ETouchIndex::Touch1 && !LastTouchDragLocation.IsZero())
     {

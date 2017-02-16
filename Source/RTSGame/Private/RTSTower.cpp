@@ -1,14 +1,14 @@
 #include "RTSGame.h"
-#include "Tower.h"
+#include "RTSTower.h"
 
-ATower::ATower()
+ARTSTower::ARTSTower()
 {
 	// Activate ticking in order to update the cursor every frame.
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 }
 
-void ATower::Tick(float DeltaSeconds)
+void ARTSTower::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
 }

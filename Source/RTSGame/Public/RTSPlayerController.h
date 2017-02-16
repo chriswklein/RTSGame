@@ -1,14 +1,14 @@
 #pragma once
 #include "GameFramework/PlayerController.h"
-#include "RTSGamePlayerController.generated.h"
+#include "RTSPlayerController.generated.h"
 
 UCLASS()
-class ARTSGamePlayerController : public APlayerController
+class ARTSPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
 public:
-	ARTSGamePlayerController();
+    ARTSPlayerController();
 
 	// Begin PlayerController interface
 	virtual void PlayerTick(float DeltaTime) override;

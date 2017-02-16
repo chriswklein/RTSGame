@@ -43,9 +43,6 @@
 SourceArt/**/*.png
 SourceArt/**/*.tga
 
-# Binary Files
-Binaries/*
-
 # Builds
 Build/*
 
@@ -63,4 +60,4 @@ DerivedDataCache/*
 
 # RTS Specific
 RTSGame.VC.db
-!Binaries/Win64/
+Binaries/Win64/*Debug*

@@ -1,18 +1,16 @@
 #pragma once
 #include "GameFramework/Pawn.h"
-#include "Tower.generated.h"
+#include "RTSTower.generated.h"
 
 UCLASS(Blueprintable)
-class ATower : public APawn
+class ARTSTower : public APawn
 {
 	GENERATED_BODY()
 
 public:
-    ATower();
+    ARTSTower();
 
 	// Called every frame.
 	virtual void Tick(float DeltaSeconds) override;
-
-private:
 };
 
